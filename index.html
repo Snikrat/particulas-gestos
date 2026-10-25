@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Partículas 3D com Gestos de Mão</title>
+</head>
+
+<body>
+  <div id="loading">Carregando partículas e câmera...</div>
+  <div id="canvas-container"></div>
+  <canvas id="hand-overlay"></canvas>
+  <div id="hand-cursor">
+    <svg class="cursor-ring" viewBox="0 0 60 60">
+      <circle id="cursor-progress" cx="30" cy="30" r="26" />
+    </svg>
+    <span id="cursor-label"></span>
+  </div>
+  <div id="hint"></div>
+  <div id="rec-indicator">● REC</div>
+
+  <div id="tutorial">
+    <div id="tutorial-step"></div>
+    <div id="tutorial-text"></div>
+    <div id="tutorial-dots"></div>
+    <button class="btn" id="btn-tutorial-skip">Pular tutorial</button>
+  </div>
+
+  <input type="file" id="image-input" accept="image/*" hidden />
+
+  <div id="webcam-box">
+    <video id="webcam" autoplay playsinline muted></video>
+    <canvas id="webcam-overlay" width="640" height="480"></canvas>
+  </div>
+
+  <div class="ui-panel">
+    <h2>Central de Controle</h2>
+
+    <div class="control-group">
+      <label>Forma 3D das partículas</label>
+      <select id="model-select">
+        <option value="tree">1 · Árvore de Natal Brilhante</option>
+        <option value="saturn">2 · Saturno Misterioso</option>
+        <option value="heart">3 · Coração Romântico</option>
+        <option value="galaxy">4 · Galáxia Espiral</option>
+        <option value="sphere">5 · Esfera</option>
+        <option value="dna">6 · Hélice de DNA</option>
+        <option value="text">7 · Texto</option>
+        <option value="image">8 · Imagem enviada</option>
+      </select>
+    </div>
+
+    <div class="control-group" id="text-group" style="display: none;">
+      <label>Texto (até 12 letras)</label>
+      <input type="text" id="text-input" maxlength="12" value="OLÁ" />
+    </div>
+
+    <div class="control-group">
+      <label>Cor das partículas</label>
+      <div class="color-picker-wrapper">
+        <input type="color" id="particle-color" value="#00ffcc" />
+        <span id="color-hex">#00ffcc</span>
+      </div>
+    </div>
+
+    <div class="status-box" id="gesture-status">
+      Partículas exibidas. Aguardando permissão da câmera...
+    </div>
+
+    <div class="button-row">
+      <button class="btn" id="btn-calibrate">Calibrar</button>
+      <button class="btn" id="btn-explode">Explodir</button>
+    </div>
+
+    <div class="modes">
+      <button class="btn mode" id="btn-paint" title="Desenhar no ar com o indicador">Pintar <kbd>T</kbd></button>
+      <button class="btn mode" id="btn-music" title="Partículas reagem à música pelo microfone">Música <kbd>M</kbd></button>
+      <button class="btn mode" id="btn-ar" title="Imagem da câmera ao fundo">AR <kbd>A</kbd></button>
+      <button class="btn mode" id="btn-image" title="Transformar uma imagem em partículas">Imagem <kbd>I</kbd></button>
+      <button class="btn mode" id="btn-photo" title="Salvar uma foto da tela">Foto <kbd>O</kbd></button>
+      <button class="btn mode" id="btn-record" title="Gravar um vídeo (até 60 s)">Gravar <kbd>G</kbd></button>
+    </div>
+
+    <details class="help">
+      <summary>Ajustes</summary>
+      <div class="setting">
+        <div class="setting-label"><span>Qualidade</span><span id="set-quality-value"></span></div>
+        <select id="set-quality">
+          <option value="auto">Automática (ajusta pelo desempenho)</option>
+          <option value="0">Alta · 300 mil partículas</option>
+          <option value="1">Média · 160 mil partículas</option>
+          <option value="2">Baixa · 80 mil partículas</option>
+          <option value="3">Mínima · 40 mil, sem brilho</option>
+        </select>
+      </div>
+      <label class="setting checkbox">
+        <input type="checkbox" id="set-sfx" /> Efeitos sonoros
+      </label>
+      <div class="setting">
+        <div class="setting-label"><span>Sensibilidade da rotação</span><span id="set-rotation-value"></span></div>
+        <input type="range" id="set-rotation" min="0.3" max="2" step="0.1" />
+      </div>
+      <div class="setting">
+        <div class="setting-label"><span>Suavidade do movimento</span><span id="set-smooth-value"></span></div>
+        <input type="range" id="set-smooth" min="0" max="1" step="0.05" />
+      </div>
+      <div class="setting">
+        <div class="setting-label"><span>Sensibilidade do zoom</span><span id="set-zoom-value"></span></div>
+        <input type="range" id="set-zoom" min="1" max="3.5" step="0.1" />
+      </div>
+      <div class="setting">
+        <div class="setting-label"><span>Brilho</span><span id="set-bloom-value"></span></div>
+        <input type="range" id="set-bloom" min="0" max="1.5" step="0.05" />
+      </div>
+      <div class="button-row">
+        <button class="btn" id="btn-reset-settings">Restaurar padrões</button>
+      </div>
+      <div class="settings-note">Tudo é salvo automaticamente neste navegador.</div>
+    </details>
+
+    <details class="help">
+      <summary>Gestos e atalhos</summary>
+      <ul>
+        <li><b>Punho empurrado para a câmera:</b> aproxima um nível (Visão ampla → Visão completa → Perto → Muito perto)</li>
+        <li><b>Mão aberta puxada para trás:</b> afasta um nível</li>
+        <li><b>Duas mãos:</b> a esquerda, para os lados, gira para os lados; a direita, para cima ou baixo, gira para cima ou baixo</li>
+        <li><b>2 dedos</b> (sinal de 2, segure até o anel encher): centraliza a figura de frente, na visão completa</li>
+        <li><b>Gesto de L</b> (polegar e indicador abertos, segure até o anel encher): troca para o texto, de frente e na visão completa</li>
+        <li><b>Empurrar a mão aberta</b> rápido em direção à câmera, ou <b>mexer as duas mãos rápido</b> ao mesmo tempo: explode as partículas</li>
+        <li><b>Modo pintar:</b> aponte só com o indicador para desenhar; abra a mão para parar</li>
+        <li><b>Teclado:</b> 1–8 formas · E explodir · R resetar zoom e giro · C calibrar · T pintar · L apagar desenho · M música · A AR · I imagem · O foto · G gravar · P pontos da mão · V expandir câmera · H esconder interface (a câmera continua) · F tela cheia</li>
+      </ul>
+      <div class="button-row">
+        <button class="btn" id="btn-tutorial">Ver tutorial de novo</button>
+      </div>
+    </details>
+  </div>
+
+  <div class="top-right-controls">
+    <button class="btn" id="btn-reset-zoom">Resetar zoom</button>
+    <button class="btn" id="btn-camera">Câmera (V)</button>
+    <button class="btn" id="btn-skeleton">Pontos (P)</button>
+    <button class="btn" id="btn-hide-ui">Esconder (H)</button>
+    <button class="btn" id="btn-fullscreen">Tela cheia</button>
+  </div>
+
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
